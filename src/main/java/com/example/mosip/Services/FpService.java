@@ -4,18 +4,15 @@ import com.example.mosip.Beans.AbisDB;
 import com.example.mosip.Repository.FpRepository;
 import com.machinezoo.sourceafis.FingerprintImage;
 import com.machinezoo.sourceafis.FingerprintImageOptions;
-import com.machinezoo.sourceafis.FingerprintMatcher;
 import com.machinezoo.sourceafis.FingerprintTemplate;
-import jdk.swing.interop.SwingInterOpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,40 +21,10 @@ public class FpService {
 
     @Autowired
     FpRepository erjpa;
-
-
-    public void createAbisDB(AbisDB e) {
-        erjpa.save(e);
-    }
-
-    public List<AbisDB> getAllAbisDBs() {
-        return erjpa.findAll();
-    }
-
-    public byte[] serial(FingerprintTemplate arr) {
-
-//        String temp="";
-//        boolean check=true;
-//        while(check)
-//        {
-//            try
-//            {
-//                ByteArrayOutputStream bo=new ByteArrayOutputStream();
-//                ObjectOutputStream so=new ObjectOutputStream(bo);
-//                so.writeObject(arr);
-//                so.flush();
-//                temp=bo.toString();
-//                return temp;
-//            }
-//            catch (Exception e)
-//            {
-//                check=false;
-//                System.out.println(e+" Serialization exception***");
-//            }
-//        }
-//        return temp;
-        return arr.toByteArray();
-    }
+    @Value("${abis.nthread}")
+    int nthread;
+    @Value("${abis.imagelimit}")
+    int imagelimit;
 
     public byte[] convertToTemplate(MultipartFile image, int id) throws IOException {
         FingerprintTemplate probe = new FingerprintTemplate(
@@ -66,31 +33,8 @@ public class FpService {
                         image.getBytes(),
                         new FingerprintImageOptions()
                                 .dpi(500)));
-        /**
-         * public void write(MultipartFile file, Path dir) {
-         *     Path filepath = Paths.get(dir.toString(), file.getOriginalFilename());
-         *     try (OutputStream os = Files.newOutputStream(filepath)) {
-         *         os.write(file.getBytes());
-         *     }Subah
-         * }
-         * */
-//        Path dire = null;
-//        Path filepaths = Paths.get(dire.toString(), image.getOriginalFilename());
-        //temp
-//        FingerprintTemplate candidate = new FingerprintTemplate(
-//                new FingerprintImage(
-////                        Files.readAllBytes(Paths.get(String.valueOf(image))),
-//                        image.getBytes(), //multipart file to byte array
-//                        new FingerprintImageOptions()
-//                                .dpi(500)));
-//        System.out.println(candidate);
-        //Serialization
-        byte[] fingerPrintA = serial(probe);
-        //  String fingerPrintB=serial(candidate);
 
-        //System.out.println(fingerPrintB);
-        // double score = new FingerprintMatcher(probe)
-        //  .match(candidate);
+        byte[] fingerPrintA = probe.toByteArray();
 
         AbisDB obj = new AbisDB();
         obj.setRefid(id);
@@ -101,41 +45,25 @@ public class FpService {
 
     }
 
-    //    public ArrayList<AbisDB> rtrfps() {
-//        ArrayList<AbisDB> obj=new ArrayList<>();
-//         obj= (ArrayList<AbisDB>) erjpa.findAll();
-//         return obj;
-//    }
-    public String identifyall(int id) throws IOException {
+    @Transactional
+    public ArrayList<Integer> identifyall(int id) throws IOException, InterruptedException {
 
-//        FingerprintTemplate probe = new FingerprintTemplate(
-//                new FingerprintImage(
-////                        Files.readAllBytes(Paths.get(String.valueOf(image))),
-//                        image.getBytes(),
-//                        new FingerprintImageOptions()
-//                                .dpi(500)));
-
-        // id-check in database if present or not
-
-        // Optional<AbisDB> image=erjpa.findById(id);
+        ArrayList<Integer> result = new ArrayList<>();
         String ans="";
         Optional<AbisDB> rec = erjpa.findById(id);
         if (rec.isPresent() == false) {
             System.out.println("Finger Print not available in Database");
         } else {
             ArrayList<AbisDB> obj = new ArrayList<>();
-            obj = (ArrayList<AbisDB>) erjpa.findAll();
+            //obj = (ArrayList<AbisDB>) erjpa.findAll();
 
             byte[] abcd = rec.get().getSertemplate();
             FingerprintTemplate probe = new FingerprintTemplate(abcd);
-            //creating fingerprint
-
-            for (int i = 0; i < obj.size(); i++) {
+//t1.stdm.jelgherajgherljh4r.kgnrekjerljh/ljk.tnjk.dgart()
+           /* for (int i = 0; i < obj.size(); i++) {
                 if (obj.get(i).getRefid() == id) continue;
                 byte[] xyz = obj.get(i).getSertemplate();
                 FingerprintTemplate fp = new FingerprintTemplate(xyz);
-//            fp.deserialize(xyz);//
-//            fp.toByteArray();
                 double score = new FingerprintMatcher(probe)
                         .match(fp);
 
@@ -145,58 +73,100 @@ public class FpService {
                     ans+=obj.get(i).getRefid()+" ";
 
                 }
-                else
-                    System.out.println(obj.get(i).getRefid()+" didnt match"+"  "+score);
+
+            }*/
+
+    int i=0;
+
+
+            while(true)
+            {
+                obj= (ArrayList<AbisDB>)erjpa.findByOffset(imagelimit,i*imagelimit);
+                if(obj.size()==0) break;
+
+                for(int j=0;j<nthread;j++)
+                {
+                    int next=j+1;
+                    int start=(int)Math.ceil(j* obj.size()/nthread);
+                    int end=(int)Math.ceil(next* obj.size()/nthread);
+                    Thread1 thobj1 = new Thread1(probe,obj,id,result,start,end);
+                    Thread t1= new Thread(thobj1);
+                    t1.start();
+                    t1.join();
+                    result.addAll( thobj1.dataHandler());
+                }
+
+
+
+                obj.clear();
+                i++;
             }
 
+
+
+
+          /*  for(int i=0;i<10;i++)
+            {
+                obj= (ArrayList<AbisDB>)erjpa.findByOffset(100,i*100);
+                Thread1 thobj1 = new Thread1(probe,obj,id,result,0);
+                Thread t1= new Thread(thobj1);
+                t1.start();
+
+                //2nd thread
+                Thread1 thobj2 = new Thread1(probe,obj,id,result,obj.size()/2);
+                Thread t2= new Thread(thobj2);
+                t2.start();
+                t1.join();
+
+
+                t2.join();
+                result.addAll( thobj1.dataHandler());
+                result.addAll( thobj2.dataHandler());
+                obj.clear();
+            } */
+
+            //System.out.println(obj.size());
+/**
+ *              while(true)
+ *             {
+ *                 obj= (ArrayList<AbisDB>)erjpa.findByOffset(100,i*100);
+ *
+ *                 for(int i=0;i<2;i++)
+ *                 {
+ *                     Thread1 thobj1 = new Thread1(probe,obj,id,result,0);
+ *                     Thread t1= new Thread(thobj1);
+ *                     t1.start();
+ *
+ *                     //2nd thread
+ *                     Thread1 thobj2 = new Thread1(probe,obj,id,result,obj.size()/2);
+ *                     Thread t2= new Thread(thobj2);
+ *                     t2.start();
+ *                     t1.join();
+ *                     t2.join();
+ *                     result.addAll( thobj1.dataHandler());
+ *                     result.addAll( thobj2.dataHandler());
+ *                     obj.clear();
+ *                 }
+ *
+ *             }
+ * */
+
+
+
+
+
+
+
         }
-        //
-//        ArrayList<AbisDB> obj=new ArrayList<>();
-//        obj= (ArrayList<AbisDB>) erjpa.findAll();
-//
-//        for(int i=0;i<obj.size();i++)
-//        {
-////            boolean check=true;
-////            while(check)
-////            {
-////                try
-////                {
-////                    String xyz=obj.get(i).getSertemplate();
-////                    byte[] b=xyz.getBytes();
-////                    ByteArrayInputStream bi=new ByteArrayInputStream(b);
-////                    ObjectInputStream si=new ObjectInputStream(bi);
-////
-////                    FingerprintTemplate fp=(FingerprintTemplate) si.readObject() ;
-////                    double score = new FingerprintMatcher(probe)
-////                            .match(fp);
-////                    System.out.println(score);
-////                    if(score>60)
-////                        return "Fingerprint Matched";
-////                }
-////                catch(Exception e)
-////                {
-////                    check=false;
-////                    System.out.println(e+" Deserial");
-////                }
-////
-////            }
-//            // FingerprintTemplate fp = null;
-//         //   fp=fp.deserialize(xyz);
-//            // string to byte array
-//            byte[] xyz=obj.get(i).getSertemplate();
-//            FingerprintTemplate fp=new FingerprintTemplate(xyz) ;
-////            fp.deserialize(xyz);//
-////            fp.toByteArray();
-//            double score = new FingerprintMatcher(probe)
-//                            .match(fp);
-//            System.out.println(score);
-//            System.out.println("*********");
-//            if(score>60)
-//                return "Fingerprint Matched";
-//        }
-//        return "Fingerprint didn't Match.";
-//    }
-        return ans;
+
+        return result;
     }
 
+    public void insertallserv(MultipartFile[] image) throws IOException {
+    int p=1050;
+        for(int i=0;i< image.length;i++)
+        {
+            System.out.println(convertToTemplate(image[i], i+p));
+        }
+    }
 }

@@ -22,7 +22,6 @@ import java.util.List;
 
 @RestController
 public class FpController {
-    // @RequestMapping("/hello")
     @Autowired
     FpService es;
 
@@ -30,32 +29,21 @@ public class FpController {
 
     @RequestMapping(value = "/insert", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public byte[] insert(@RequestParam MultipartFile image, @RequestParam int id) throws IOException {
-        //add your logics here
-        //File newFile = new File("blablabla.xxx");
-        //file.transferTo(newFile);
 
-//        Path filepath = Paths.get(dir.toString(), image.getOriginalFilename());
         return es.convertToTemplate(image,id);
     }
 
-//    @GetMapping("/identify")
-//    public ArrayList<AbisDB> identify() throws IOException {
-//        //add your logics here
-//        //File newFile = new File("blablabla.xxx");
-//        //file.transferTo(newFile);
-//        return es.rtrfps();
-//
-////        Path filepath = Paths.get(dir.toString(), image.getOriginalFilename());
-//     //   return es.convertToTemplate(image,id);
-//    }
+    @RequestMapping(value = "/insertall", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void insertall(@RequestParam MultipartFile[] image) throws  IOException
+    {
+        es.insertallserv(image);
+
+    }
+
 
     @RequestMapping(value = "/identify", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String identify(@RequestParam int id) throws IOException, ClassNotFoundException {
-        //add your logics here
-        //File newFile = new File("blablabla.xxx");
-        //file.transferTo(newFile);
+    public ArrayList<Integer> identify(@RequestParam int id) throws IOException, ClassNotFoundException, InterruptedException {
 
-//        Path filepath = Paths.get(dir.toString(), image.getOriginalFilename());
         return es.identifyall(id);
     }
 
