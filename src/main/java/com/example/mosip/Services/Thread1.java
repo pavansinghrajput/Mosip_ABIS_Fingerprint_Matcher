@@ -3,10 +3,13 @@ package com.example.mosip.Services;
 import com.example.mosip.Beans.AbisDB;
 import com.machinezoo.sourceafis.FingerprintMatcher;
 import com.machinezoo.sourceafis.FingerprintTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.ArrayList;
 
 public class Thread1 implements Runnable {
+    @Value("${abis.Threshold}")
+    int Threshold;
     FingerprintTemplate probe;
     ArrayList<AbisDB> obj;
     int id;
@@ -32,7 +35,7 @@ public class Thread1 implements Runnable {
             double score = new FingerprintMatcher(probe)
                     .match(fp);
 
-            if (score > 60) {
+            if (score > Threshold){
                 System.out.println("*********");
                 System.out.println(obj.get(i).getRefid() + "  " + score);
                 result.add(obj.get(i).getRefid());
