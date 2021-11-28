@@ -33,12 +33,12 @@ public class FpController {
         return es.convertToTemplate(image,id);
     }
 
-    @RequestMapping(value = "/insertall", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    /*@RequestMapping(value = "/insertall", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public void insertall(@RequestParam MultipartFile[] image) throws  IOException
     {
         es.insertallserv(image);
 
-    }
+    }*/
 
 
     @RequestMapping(value = "/identify", method = RequestMethod.POST,consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

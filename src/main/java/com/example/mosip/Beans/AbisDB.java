@@ -8,9 +8,7 @@ public class AbisDB {
 
     @Id
     public int refid;
-    //@Column(nullable = false)
-    //@Column(columnDefinition="TEXT")
-    //BT
+
     @Lob
     @Column(columnDefinition="TEXT")//
     public byte[] sertemplate;
